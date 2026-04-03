@@ -1,18 +1,33 @@
-# ManipArena
+<div align="center">
 
-[**ManipArena**](https://maniparena.x2robot.com) is a real-robot benchmark and competition for bimanual manipulation, hosted at the [CVPR 2026 Embodied AI Workshop](https://embodied-ai.org/cvpr2026/).
+# ManipArena: Comprehensive Real-world Evaluation of Reasoning-Oriented Generalist Robot Manipulation
 
-It features **20 tasks** across three categories:
+[![arXiv](https://img.shields.io/badge/arXiv-2603.28545-b31b1b.svg)](https://arxiv.org/abs/2603.28545)
+[![Project Page](https://img.shields.io/badge/Project-Page-blue)](https://maniparena.x2robot.com)
+[![Dataset](https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace-Dataset-yellow)](https://huggingface.co/datasets/ManipArena/maniparena-dataset)
+[![Simulation](https://img.shields.io/badge/Simulation-ManipArena--Sim-green)](https://github.com/maniparena/maniparena-sim)
+[![License](https://img.shields.io/badge/License-Apache_2.0-lightgrey.svg)](LICENSE)
+[![CVPR 2026](https://img.shields.io/badge/CVPR%202026-Embodied%20AI%20Workshop-purple)](https://embodied-ai.org/cvpr2026/)
 
-- **Execution Reasoning** (10 tasks) — the goal is clear; the challenge is precise motor execution
-- **Semantic Reasoning** (5 tasks) — the execution is straightforward; the challenge is understanding what to do
-- **Mobile Manipulation** (5 tasks) — long-horizon navigation and manipulation
+[**Paper**](https://arxiv.org/abs/2603.28545) | [**Project Page**](https://maniparena.x2robot.com) | [**Dataset**](https://huggingface.co/datasets/ManipArena/maniparena-dataset) | [**Simulation**](https://github.com/maniparena/maniparena-sim)
+
+</div>
+
+**ManipArena** is a real-robot benchmark and competition for bimanual manipulation, hosted at the [CVPR 2026 Embodied AI Workshop](https://embodied-ai.org/cvpr2026/). It features **20 real-robot tasks** across three categories:
+
+| Category | Tasks | Challenge |
+|----------|:-----:|-----------|
+| **Execution Reasoning** | 10 | The goal is clear; the challenge is precise motor execution |
+| **Semantic Reasoning** | 5 | The execution is straightforward; the challenge is understanding *what* to do |
+| **Mobile Manipulation** | 5 | Long-horizon navigation and manipulation |
 
 Participants serve their model **remotely** via WebSocket — no robot hardware needed. The organizers' infrastructure handles all robot control, data collection, and scoring.
 
 <p align="center">
   <img src="docs/task_overview.png" width="100%" alt="ManipArena Task Overview" />
 </p>
+
+---
 
 ## How It Works
 
@@ -62,11 +77,9 @@ See [`examples/my_policy.py`](examples/my_policy.py) for the full template,
 and [`examples/openpi_example.py`](examples/openpi_example.py) for a ready-to-run
 [OpenPI](https://github.com/Physical-Intelligence/openpi) example.
 
-## Data
+## Dataset
 
-Beyond standard end-effector trajectories, ManipArena provides **joint positions, velocities, currents, camera views, and mobile-base states** — giving participants the freedom to explore diverse input representations for their models.
-
-Training data is provided in [LeRobot](https://github.com/huggingface/lerobot) format:
+Training data is hosted on [HuggingFace](https://huggingface.co/datasets/ManipArena/maniparena-dataset) in [LeRobot](https://github.com/huggingface/lerobot) format. Beyond standard end-effector trajectories, ManipArena provides **joint positions, velocities, currents, camera views, and mobile-base states** — giving participants the freedom to explore diverse input representations.
 
 ```
 dataset/
@@ -78,7 +91,9 @@ dataset/
         observation.images.rightImg/episode_000000.mp4# right wrist camera
 ```
 
-### Data Fields
+See [DATASET_CARD.md](DATASET_CARD.md) for the full dimension layout, task list, and usage examples.
+
+### Data Fields (Summary)
 
 Each episode provides multiple data types. You can choose which fields to use for your model.
 
@@ -168,13 +183,15 @@ python scripts/eval.py --task sort_blocks --config configs/eval/robot.yaml
 
 ## Observation & Action Format
 
-### Observation (client → server)
+ManipArena supports two control modes: **`end_pose`** (end-effector) and **`joints`**. Set via `--control-mode` when launching.
+
+### Observation (client &rarr; server)
 
 ```python
 {
     "state": {
-        "follow1_pos": [x, y, z, r, p, y, gripper],   # left arm 7D
-        "follow2_pos": [x, y, z, r, p, y, gripper],   # right arm 7D
+        "follow1_pos": [x, y, z, r, p, y, gripper],   # 7D, left arm end-effector
+        "follow2_pos": [x, y, z, r, p, y, gripper],   # 7D, right arm end-effector
     },
     "views": {
         "camera_left":  "<base64 JPEG>",
@@ -185,12 +202,23 @@ python scripts/eval.py --task sort_blocks --config configs/eval/robot.yaml
 }
 ```
 
-### Action (server → client)
+### Action (server &rarr; client)
+
+**`end_pose` mode:**
 
 ```python
 {
-    "follow1_pos": [[x, y, z, r, p, y, grip], ...],   # List[List[float]], T steps
-    "follow2_pos": [[x, y, z, r, p, y, grip], ...],
+    "follow1_pos": [[x, y, z, r, p, y, grip], ...],   # List[List[float]], T steps, left arm
+    "follow2_pos": [[x, y, z, r, p, y, grip], ...],   # List[List[float]], T steps, right arm
+}
+```
+
+**`joints` mode:**
+
+```python
+{
+    "follow1_pos": [[j1, j2, j3, j4, j5, j6, grip], ...],  # List[List[float]], T steps, left arm
+    "follow2_pos": [[j1, j2, j3, j4, j5, j6, grip], ...],  # List[List[float]], T steps, right arm
 }
 ```
 
@@ -239,6 +267,20 @@ scripts/                   # self-check & evaluation tools
     mock_schema_check.py   #   Step 2: schema validation
     mock_openloop_eval.py  #   Quick open-loop check
     eval_openloop.py       #   Full open-loop eval with plots
+```
+
+## Citation
+
+If you find ManipArena useful in your research, please consider citing:
+
+```bibtex
+@article{maniparena2026,
+    title={ManipArena: A Benchmark for Bimanual Manipulation},
+    author={ManipArena Team},
+    journal={arXiv preprint arXiv:2603.28545},
+    year={2026},
+    url={https://arxiv.org/abs/2603.28545},
+}
 ```
 
 ## License
