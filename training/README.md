@@ -15,8 +15,11 @@ conda activate maniparena-pi05
 huggingface-cli login
 huggingface-cli download ManipArena/maniparena-dataset \
   --repo-type dataset \
-  --local-dir data/maniparena-dataset
+  --local-dir data/maniparena-dataset \
+  --include "real/execution_reasoning/**" "real/semantic_reasoning/**"
 ```
+
+The conversion script first looks for final files under `data/maniparena-dataset/real/...`. If that directory is absent, it also supports Hugging Face's local cache layout under `data/maniparena-dataset/.cache/huggingface/download/real/...`. `.lock` files alone are not usable data; if only locks exist, wait for the download to finish or rerun the download command.
 
 ## 3. Build the Tabletop Dataset
 

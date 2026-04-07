@@ -160,11 +160,41 @@ def _create_dataset(repo_id: str, root: Path, fps: int, features: dict):
         return LeRobotDataset.create(**kwargs)
 
 
+def _resolve_source_root(source: Path) -> Path:
+    candidates: list[Path] = []
+    if source.is_file() or source.suffix == ".lock":
+        candidates.extend(source.parents)
+    candidates.append(source)
+    candidates.extend(source.parents)
+
+    for candidate in candidates:
+        if candidate.name == "download" and (candidate / "real").exists():
+            return candidate
+        if candidate.name == "real" and candidate.parent.name == "download":
+            return candidate.parent
+        if (candidate / "real").exists():
+            return candidate
+
+    hf_download_root = source / ".cache" / "huggingface" / "download"
+    if (hf_download_root / "real").exists():
+        lock_count = sum(1 for _ in (hf_download_root / "real").rglob("*.lock"))
+        print(
+            "[INFO] Final real/ directory was not found; using Hugging Face "
+            f"download cache root: {hf_download_root} (lock files: {lock_count})"
+        )
+        return hf_download_root
+    raise FileNotFoundError(
+        f"Cannot find ManipArena real/ under {source} or {hf_download_root}. "
+        "If you only see .lock files, the Hugging Face download is still running or was interrupted."
+    )
+
+
 def convert(args: argparse.Namespace) -> None:
     source = Path(args.source).expanduser().resolve()
     root = Path(args.root).expanduser().resolve()
     if not source.exists():
         raise FileNotFoundError(source)
+    source = _resolve_source_root(source)
 
     task_dirs = list(_iter_task_dirs(source))
     if len(task_dirs) != 15:
