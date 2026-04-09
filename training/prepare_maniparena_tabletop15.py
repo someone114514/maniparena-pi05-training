@@ -104,6 +104,11 @@ def _read_video_rgb(path: Path) -> list[np.ndarray]:
 
 def _make_features(image_shape: tuple[int, int, int]) -> dict:
     return {
+        "task": {
+            "dtype": "string",
+            "shape": (1,),
+            "names": None,
+        },
         "observation.state": {
             "dtype": "float32",
             "shape": (14,),
@@ -123,8 +128,6 @@ def _make_features(image_shape: tuple[int, int, int]) -> dict:
             for key in CAMERA_KEYS
         },
     }
-
-
 
 
 def _add_frame(dataset, frame: dict, task_text: str) -> None:
@@ -231,6 +234,7 @@ def convert(args: argparse.Namespace) -> None:
                 if state.shape[0] < 14 or action.shape[0] < 14:
                     raise ValueError(f"{parquet_path} has state/action dims {state.shape}/{action.shape}")
                 frame = {
+                    "task": task_text,
                     "observation.state": state[:14],
                     "action": action[:14],
                     **{key: videos[key][idx] for key in CAMERA_KEYS},
