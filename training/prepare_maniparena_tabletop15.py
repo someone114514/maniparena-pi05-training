@@ -102,7 +102,7 @@ def _read_video_rgb(path: Path) -> list[np.ndarray]:
         container.close()
 
 
-def _make_features(image_shape: tuple[int, int, int]) -> dict:
+def _make_features(image_shapes: dict[str, tuple[int, int, int]]) -> dict:
     return {
         "task": {
             "dtype": "string",
@@ -122,7 +122,7 @@ def _make_features(image_shape: tuple[int, int, int]) -> dict:
         **{
             key: {
                 "dtype": "image",
-                "shape": image_shape,
+                "shape": image_shapes[key],
                 "names": ["height", "width", "channel"],
             }
             for key in CAMERA_KEYS
@@ -204,12 +204,15 @@ def convert(args: argparse.Namespace) -> None:
         raise RuntimeError(f"Expected 15 tabletop tasks, found {len(task_dirs)} under {source / 'real'}")
 
     first_episode = next(_iter_episode_files(task_dirs[0]))
-    first_frame = _read_video_rgb(_video_path(task_dirs[0], first_episode, CAMERA_KEYS[0]))[0]
+    first_frames = {
+        key: _read_video_rgb(_video_path(task_dirs[0], first_episode, key))[0]
+        for key in CAMERA_KEYS
+    }
     dataset = _create_dataset(
         repo_id=args.repo_id,
         root=root,
         fps=args.fps,
-        features=_make_features(tuple(first_frame.shape)),
+        features=_make_features({key: tuple(frame.shape) for key, frame in first_frames.items()}),
     )
 
     total_episodes = 0
