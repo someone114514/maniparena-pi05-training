@@ -104,11 +104,6 @@ def _read_video_rgb(path: Path) -> list[np.ndarray]:
 
 def _make_features(image_shapes: dict[str, tuple[int, int, int]]) -> dict:
     return {
-        "task": {
-            "dtype": "string",
-            "shape": (1,),
-            "names": None,
-        },
         "observation.state": {
             "dtype": "float32",
             "shape": (14,),
